@@ -1,6 +1,7 @@
-import React, {useState} from 'react';
-import {View} from 'react-native';
+import React, { useState } from 'react';
+import { View } from 'react-native';
 import API from '../../../../action/api';
+import { AuthContext } from '../../../../../auth-context';
 import ActivityLoader from '../../../../components/activity-loader';
 import AlertMsg from '../../../../components/alert-msg';
 import CustomBtn from '../../../../components/custom-btn';
@@ -9,6 +10,7 @@ import styles from './style';
 
 export default function EditProfile(props) {
   const userProfile = props.route.params;
+  const { updateUserProfile } = React.useContext(AuthContext).authContext;
 
   const [isLoading, setIsLoading] = useState(false);
   const [emailId, setEmailId] = useState(userProfile.email);
@@ -27,12 +29,21 @@ export default function EditProfile(props) {
             name,
             emailId,
             username,
-            userProfile.password,
+            // userProfile.password,
           );
 
           if (data.success === 'true') {
             setIsLoading(false);
             AlertMsg('Profile Updated Successfully');
+            updateUserProfile({
+              userProfile: {
+                ...userProfile,
+                name: name,
+                email: emailId,
+                username: username,
+                phone: phoneNo,
+              },
+            });
             props.navigation.goBack();
           } else {
             setIsLoading(false);

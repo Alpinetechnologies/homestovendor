@@ -24,7 +24,7 @@ export const makeGetRequest = async url => {
     setTimeout(() => controller.abort(), GET_REQUEST_TIMEOUT);
     const response = await fetch(
       url,
-      {signal: controller.signal},
+      { signal: controller.signal },
       constructGetRequestOptions(),
     );
     const json = await response.json();
@@ -66,7 +66,7 @@ export const makeGetRequestWithToken = async url => {
     const response = await fetch(
       url,
       constructGetRequestWithTokenOptions(token),
-      {signal: controller.signal},
+      { signal: controller.signal },
     );
 
     // console.log(response);
@@ -98,12 +98,14 @@ export const makeGetRequestWithToken = async url => {
 
 export const makePostRequest = async (url, payload) => {
   try {
-    // console.log('make POST request FINAL= ' + url);
+    console.log('make POST request FINAL= ', JSON.stringify(url));
+    console.log('make POST payload FINAL= ', JSON.stringify(payload));
     let controller = new AbortController();
     setTimeout(() => controller.abort(), POST_REQUEST_TIMEOUT);
     const response = await fetch(url, constructPostRequestOptions(payload), {
       signal: controller.signal,
     });
+    console.log('make POST response FINAL= ' + response);
 
     const json = await response.json();
     // console.log(json);
@@ -129,6 +131,8 @@ export const makePostRequest = async (url, payload) => {
 export const makePostRequestWithToken = async (url, payload) => {
   try {
     //  console.log('make POST Header Token request FINAL= ' + url);
+    console.log('make POST request FINAL= ', JSON.stringify(url));
+    console.log('make POST payload FINAL= ', JSON.stringify(payload));
     let token = await AsyncStorage.getItem('accessToken');
     let controller = new AbortController();
     setTimeout(() => controller.abort(), POST_REQUEST_TIMEOUT);
@@ -139,6 +143,7 @@ export const makePostRequestWithToken = async (url, payload) => {
         signal: controller.signal,
       },
     );
+    console.log('make POST response FINAL= ' + response);
     const json = await response.json();
 
     if (

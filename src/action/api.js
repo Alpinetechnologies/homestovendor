@@ -43,7 +43,7 @@ const API = {
   async getLoginViaEmail(username, password) {
     try {
       const data = await makePostRequest(
-        BASE_URL + '/login_via_username_password',
+        BASE_URL + '/vendor_login_via_username_password',
         {
           username: username,
           password: password,
@@ -60,7 +60,7 @@ const API = {
 
   async setRegistrationData(name, email, phone, password, username) {
     try {
-      const data = await makePostRequest(BASE_URL + '/new_user_registration', {
+      const data = await makePostRequest(BASE_URL + '/new_vendor_registration', {
         name: name,
         email: email,
         phone: phone,
@@ -520,7 +520,7 @@ const API = {
 
   async getUserProfile() {
     try {
-      const data = await makeGetRequestWithToken(BASE_URL + '/view_profile');
+      const data = await makeGetRequestWithToken(BASE_URL + '/view_vendor_profile');
 
       if (data && data.success === 'true') {
         return data;
@@ -537,7 +537,7 @@ const API = {
   async setUserProfile(name, emailId, username, password) {
     try {
       const data = await makePostRequestWithToken(
-        BASE_URL + '/update_profile',
+        BASE_URL + '/update_vendor_profile',
         {
           name: name,
           email: emailId,
@@ -603,6 +603,20 @@ const API = {
       } else {
         return 0;
       }
+    } catch (error) {
+      return error.response;
+    }
+  },
+  async getOrdersByVendorId(vendorId) {
+    try {
+      const data = await makePostRequestWithToken(
+        BASE_URL + '/get_all_order_by_vendor_id',
+        {
+          vendor_id: vendorId,
+        },
+      );
+
+      return data;
     } catch (error) {
       return error.response;
     }

@@ -1,12 +1,12 @@
 import * as React from 'react';
-import {StatusBar} from 'react-native';
-import {AuthContext} from './auth-context';
+import { StatusBar } from 'react-native';
+import { AuthContext } from './auth-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuthNavigator from './src/navigations/auth-navigator';
 import AppNavigator from './src/navigations/app-navigator';
 import API from './src/action/api';
 
-export default function EntryPoint({}) {
+export default function EntryPoint({ }) {
   const [state, dispatch] = React.useReducer(
     (prevState, action) => {
       switch (action.type) {
@@ -80,7 +80,10 @@ export default function EntryPoint({}) {
           const profile = await API.getUserProfile();
 
           if (profile && profile.success === 'true') {
-            userProfile = profile.extraData.profile;
+            userProfile = {
+              ...profile.extraData.profile,
+              user_id: userId,
+            };
             console.log('Entrypoint ', userProfile);
           } else {
             // Invalid token, logout user
@@ -112,11 +115,11 @@ export default function EntryPoint({}) {
   const authContext = React.useMemo(
     () => ({
       signIn: async data => {
-        dispatch({type: 'SIGN_IN', token: data.token, id: data.id});
+        dispatch({ type: 'SIGN_IN', token: data.token, id: data.id });
       },
-      signOut: async () => dispatch({type: 'SIGN_OUT'}),
+      signOut: async () => dispatch({ type: 'SIGN_OUT' }),
       updateUserProfile: async data => {
-        dispatch({type: 'USER_PROFILE', userProfile: data.userProfile});
+        dispatch({ type: 'USER_PROFILE', userProfile: data.userProfile });
       },
       // updateCartCount: async data => {
       //   dispatch({type: 'CART_COUNT', cartCount: data.cartCount});

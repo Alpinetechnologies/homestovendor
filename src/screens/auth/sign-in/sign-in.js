@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,13 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import {IMAGES} from '../../../constants/images';
+import { IMAGES } from '../../../constants/images';
 import styles from './style';
-import {COLORS} from '../../../constants/colors';
+import { COLORS } from '../../../constants/colors';
 import Feather from 'react-native-vector-icons/Feather';
 import IconLabelInput from '../../../components/icon-label-input';
 import CustomBtn from '../../../components/custom-btn';
-import {AuthContext} from '../../../../auth-context';
+import { AuthContext } from '../../../../auth-context';
 
 import ToastAlertMsg from '../../../components/toast-alert-msg';
 import ActivityLoader from '../../../components/activity-loader';
@@ -22,7 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SignIn(props) {
-  const {signIn} = React.useContext(AuthContext).authContext;
+  const { signIn, updateUserProfile } = React.useContext(AuthContext).authContext;
 
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState(null);
@@ -40,11 +40,32 @@ export default function SignIn(props) {
           if (data && data.success === 'true') {
             await AsyncStorage.setItem('userId', data.user_id);
             await AsyncStorage.setItem('accessToken', data.token);
-            signIn({token: data.token, id: data.user_id});
+
+            try {
+              const profile = await API.getUserProfile();
+              updateUserProfile({
+                userProfile: {
+                  ...profile.extraData.profile,
+                  user_id: data.user_id,
+                },
+              });
+            } catch (profileError) {
+              console.log('Profile fetch error:', profileError);
+            }
+
+            signIn({ token: data.token, id: data.user_id });
             setIsLoading(false);
           } else {
             setIsLoading(false);
-            ToastAlertMsg(data?.msg || 'Invalid UserName or Password.');
+            let errorMsg = data?.msg || 'Invalid UserName or Password.';
+            if (data?.extraData) {
+              if (typeof data.extraData === 'object') {
+                errorMsg = Object.values(data.extraData).join(', ');
+              } else {
+                errorMsg = data.extraData;
+              }
+            }
+            ToastAlertMsg(errorMsg);
           }
         } else {
           ToastAlertMsg('Please Enter Password');
@@ -68,10 +89,10 @@ export default function SignIn(props) {
       />
       {isLoading && <ActivityLoader isLoading={isLoading} />}
       <View style={styles.container}>
-        <View style={{flex: 1}}>
+        <View style={{ flex: 1 }}>
           {Platform.OS === 'ios' && (
             <TouchableOpacity
-              style={{marginTop: 20}}
+              style={{ marginTop: 20 }}
               onPress={() => props.navigation.goBack()}>
               <Feather name="arrow-left" size={20} color={COLORS.BLACK} />
             </TouchableOpacity>
@@ -91,7 +112,7 @@ export default function SignIn(props) {
           <IconLabelInput
             icon="lock"
             placeholder="Password"
-            secureTextEntry={true}
+            secureText={true}
             defaultValue={password}
             onChangeText={text => setPassword(text)}
           />
