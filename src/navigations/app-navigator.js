@@ -1,18 +1,22 @@
 import React from 'react';
 
-import {NavigationContainer} from '@react-navigation/native';
-import {createDrawerNavigator} from '@react-navigation/drawer';
+import { NavigationContainer } from '@react-navigation/native';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import CustomDrawerContent from './custom-drawer-content';
 import BottomTabNavigator from './bottom-tab-navigator';
-import {StatusBar, StyleSheet, Text, View} from 'react-native';
-import {COLORS} from '../constants/colors';
-import {FONT_FAMILY} from '../constants/font-family';
+import { StatusBar, StyleSheet, Text, View } from 'react-native';
+import { COLORS } from '../constants/colors';
+import { FONT_FAMILY } from '../constants/font-family';
 
-import {GoBack} from '../components/header-components';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { GoBack } from '../components/header-components';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import EditProfile from '../screens/app/account/edit-profile/edit-profile';
 import ViewProfile from '../screens/app/account/view-profile/view-profile';
+import ChangePassword from '../screens/app/account/change-password/change-password';
+import About from '../screens/app/account/about/about';
+import TermsConditions from '../screens/app/account/terms-conditions/terms-conditions';
+import ContactUs from '../screens/app/account/contact-us/contact-us';
 
 import HomeScreen from '../screens/app/home-screen/home-screen';
 
@@ -20,7 +24,7 @@ import HomeScreen from '../screens/app/home-screen/home-screen';
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
-export default function AppNavigator({userProfile}) {
+export default function AppNavigator({ userProfile }) {
   return (
     <NavigationContainer>
       <StatusBar
@@ -28,7 +32,7 @@ export default function AppNavigator({userProfile}) {
         backgroundColor={'transparent'}
         barStyle="light-content"
       />
-    
+
 
       <Stack.Navigator
         screenOptions={{
@@ -42,8 +46,8 @@ export default function AppNavigator({userProfile}) {
         <Stack.Screen
           name="Home"
           component={BottomTabNavigator}
-       
-          options={{headerShown: false}}
+
+          options={{ headerShown: false }}
         />
 
         <Stack.Screen
@@ -54,8 +58,8 @@ export default function AppNavigator({userProfile}) {
           }}
         />
 
-      
-    
+
+
         <Stack.Screen
           name="EditProfile"
           component={EditProfile}
@@ -64,7 +68,7 @@ export default function AppNavigator({userProfile}) {
           }}
         />
 
-       
+
         <Stack.Screen
           name="MyProfile"
           component={ViewProfile}
@@ -73,24 +77,52 @@ export default function AppNavigator({userProfile}) {
             headerShadowVisible: false,
           }}
         />
+        <Stack.Screen
+          name="ChangePassword"
+          component={ChangePassword}
+          options={{
+            title: 'Change Password',
+          }}
+        />
+        <Stack.Screen
+          name="About"
+          component={About}
+          options={{
+            title: 'About Us',
+          }}
+        />
+        <Stack.Screen
+          name="TermsConditions"
+          component={TermsConditions}
+          options={{
+            title: 'Terms & Conditions',
+          }}
+        />
+        <Stack.Screen
+          name="ContactUs"
+          component={ContactUs}
+          options={{
+            title: 'Contact Us',
+          }}
+        />
 
 
-      
 
-      
 
-       
-       
 
-      
-        
-        
-        
 
-        
-        
 
-        
+
+
+
+
+
+
+
+
+
+
+
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -117,7 +149,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 
-  iconStyleRight: {marginRight: 15},
+  iconStyleRight: { marginRight: 15 },
   name: {
     fontSize: 15,
     color: COLORS.WHITE,

@@ -621,6 +621,21 @@ const API = {
       return error.response;
     }
   },
+
+  async setChangePassword(password) {
+    try {
+      const data = await makePostRequestWithToken(
+        BASE_URL + '/update_vendor_profile_password',
+        {
+          password: password,
+        },
+      );
+
+      return data;
+    } catch (error) {
+      return error.response;
+    }
+  },
 };
 
 export default API;
