@@ -24,8 +24,10 @@ export const makeGetRequest = async url => {
     setTimeout(() => controller.abort(), GET_REQUEST_TIMEOUT);
     const response = await fetch(
       url,
-      { signal: controller.signal },
-      constructGetRequestOptions(),
+      {
+        ...constructGetRequestOptions(),
+        signal: controller.signal
+      },
     );
     const json = await response.json();
     if (json) {
@@ -65,8 +67,10 @@ export const makeGetRequestWithToken = async url => {
     setTimeout(() => controller.abort(), GET_REQUEST_TIMEOUT);
     const response = await fetch(
       url,
-      constructGetRequestWithTokenOptions(token),
-      { signal: controller.signal },
+      {
+        ...constructGetRequestWithTokenOptions(token),
+        signal: controller.signal
+      },
     );
 
     // console.log(response);
@@ -102,9 +106,13 @@ export const makePostRequest = async (url, payload) => {
     console.log('make POST payload FINAL= ', JSON.stringify(payload));
     let controller = new AbortController();
     setTimeout(() => controller.abort(), POST_REQUEST_TIMEOUT);
-    const response = await fetch(url, constructPostRequestOptions(payload), {
-      signal: controller.signal,
-    });
+    const response = await fetch(
+      url,
+      {
+        ...constructPostRequestOptions(payload),
+        signal: controller.signal,
+      }
+    );
     console.log('make POST response FINAL= ' + response);
 
     const json = await response.json();
@@ -138,8 +146,8 @@ export const makePostRequestWithToken = async (url, payload) => {
     setTimeout(() => controller.abort(), POST_REQUEST_TIMEOUT);
     const response = await fetch(
       url,
-      constructPostRequestWithTokenOptions(payload, token),
       {
+        ...constructPostRequestWithTokenOptions(payload, token),
         signal: controller.signal,
       },
     );

@@ -609,11 +609,8 @@ const API = {
   },
   async getOrdersByVendorId(vendorId) {
     try {
-      const data = await makePostRequestWithToken(
-        BASE_URL + '/get_all_order_by_vendor_id',
-        {
-          vendor_id: vendorId,
-        },
+      const data = await makeGetRequestWithToken(
+        BASE_URL + '/get_all_order_by_vendor_id?vendor_id=' + vendorId,
       );
 
       return data;
