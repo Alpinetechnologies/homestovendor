@@ -113,7 +113,7 @@ export const makePostRequest = async (url, payload) => {
         signal: controller.signal,
       }
     );
-    console.log('make POST response FINAL= ' + response);
+    console.log('make POST response FINAL= ' + JSON.stringify(response));
 
     const json = await response.json();
     // console.log(json);
@@ -151,7 +151,7 @@ export const makePostRequestWithToken = async (url, payload) => {
         signal: controller.signal,
       },
     );
-    console.log('make POST response FINAL= ' + response);
+    console.log('make POST response FINAL= ' + JSON.stringify(response));
     const json = await response.json();
 
     if (

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Linking, Alert, RefreshControl } from 'react-native';
 import { AuthContext } from '../../../../auth-context';
 import API from '../../../action/api';
 
@@ -9,6 +9,9 @@ export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState('ongoing'); // 'ongoing' or 'past'
   const [ongoingOrders, setOngoingOrders] = useState([]);
   const [pastOrders, setPastOrders] = useState([]);
+  const [checkoutLoading, setCheckoutLoading] = useState(null); // stores order_id being processed
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [dashboardData, setDashboardData] = useState({
     totalBookings: 0,
     totalHotels: 6,
@@ -17,45 +20,80 @@ export default function HomeScreen() {
     availableRooms: 60,
   });
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      console.log('Fetching orders for vendor:', userProfile?.user_id);
-      if (userProfile?.user_id) {
-        try {
-          const res = await API.getOrdersByVendorId(userProfile.user_id);
-          console.log('Orders API Response:', res);
-
-          if (res && res.success === 'true') {
-            const data = res.extraData || {};
-            const ongoing = data.ongoing_bookings || [];
-            const past = data.past_cancel_bookings || [];
-
-            console.log('Setting ongoing bookings:', ongoing.length);
-            console.log('Setting past bookings:', past.length);
-
-            setOngoingOrders(ongoing);
-            setPastOrders(past);
-
-            setDashboardData(prev => ({
-              ...prev,
-              totalBookings: ongoing.length + past.length,
-            }));
-          } else {
-            console.log('API response success was false or res was empty');
-          }
-        } catch (error) {
-          console.log('Error fetching orders:', error);
-        } finally {
-          setIsLoading(false);
-        }
+  const fetchOrders = async ({ silent = false } = {}) => {
+    try {
+      const res = await API.getOrdersByVendorId(userProfile?.user_id);
+      if (res && res.success === 'true' && typeof res.extraData === 'object') {
+        const ongoing = res.extraData.ongoing_bookings || [];
+        const past = res.extraData.past_cancel_bookings || [];
+        setOngoingOrders(ongoing);
+        setPastOrders(past);
+        setDashboardData(prev => ({
+          ...prev,
+          totalBookings: ongoing.length + past.length,
+        }));
       } else {
-        console.log('No user_id found in userProfile');
-        setIsLoading(false);
+        // success: "false" or extraData is "No order Found" string — clear lists
+        setOngoingOrders([]);
+        setPastOrders([]);
       }
-    };
+    } catch (error) {
+      console.log('Error fetching orders:', error);
+      if (!silent) Alert.alert('Error', 'Failed to load orders. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+      setIsLoadingMore(false);
+    }
+  };
 
-    fetchOrders();
+  useEffect(() => {
+    if (userProfile?.user_id) fetchOrders();
+    else setIsLoading(false);
   }, [userProfile?.user_id]);
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    fetchOrders({ silent: true });
+  };
+
+  const handleLoadMore = () => {
+    setIsLoadingMore(true);
+    fetchOrders({ silent: true });
+  };
+
+  const handleCheckout = (orderId) => {
+    Alert.alert(
+      'Confirm Check-out',
+      'Are you sure you want to mark this booking as checked out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Yes, Check-out',
+          style: 'destructive',
+          onPress: async () => {
+            setCheckoutLoading(orderId);
+            try {
+              const res = await API.setMarkAsCheckout(orderId);
+              if (res && res.success === 'true') {
+                Alert.alert('Success', 'Booking marked as checked out.');
+                setOngoingOrders(prev => prev.filter(o => o.order_id !== orderId));
+              } else {
+                const errMsg = typeof res?.extraData === 'string'
+                  ? res.extraData
+                  : res?.msg || 'Failed to mark as check-out.';
+                Alert.alert('Error', errMsg);
+              }
+            } catch (e) {
+              Alert.alert('Error', 'Something went wrong. Please try again.');
+            } finally {
+              setCheckoutLoading(null);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   const occupancyRate = Math.round(
     (dashboardData.occupiedRooms / dashboardData.totalRooms) * 100
@@ -68,7 +106,7 @@ export default function HomeScreen() {
     </View>
   );
 
-  const BookingCard = ({ item }) => (
+  const BookingCard = ({ item, onCheckout, isCheckingOut }) => (
     <View style={styles.bookingCard}>
       <View style={styles.cardHeader}>
         {item.image && item.image.length > 0 && (
@@ -117,6 +155,21 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
       </View>
+
+
+      <View style={styles.cardFooter}>
+        <TouchableOpacity
+          style={[styles.actionButton, isCheckingOut && styles.actionButtonDisabled]}
+          onPress={onCheckout}
+          disabled={isCheckingOut}
+        >
+          {isCheckingOut ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.actionButtonText}>Mark as Check-out</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -132,12 +185,27 @@ export default function HomeScreen() {
     }
 
     return data.map((item, index) => (
-      <BookingCard key={item.order_id || index} item={item} />
+      <BookingCard
+        key={item.order_id || index}
+        item={item}
+        onCheckout={() => handleCheckout(item.order_id)}
+        isCheckingOut={checkoutLoading === item.order_id}
+      />
     ));
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={isRefreshing}
+          onRefresh={handleRefresh}
+          colors={['#2E86DE']}
+          tintColor="#2E86DE"
+        />
+      }
+    >
       <Text style={styles.heading}>Vendor Dashboard</Text>
 
       {isLoading ? (
@@ -170,6 +238,19 @@ export default function HomeScreen() {
           <View style={styles.listContainer}>
             {renderContent()}
           </View>
+
+          {/* Load More */}
+          <TouchableOpacity
+            style={[styles.loadMoreButton, isLoadingMore && styles.loadMoreButtonDisabled]}
+            onPress={handleLoadMore}
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? (
+              <ActivityIndicator size="small" color="#2E86DE" />
+            ) : (
+              <Text style={styles.loadMoreText}>Load More</Text>
+            )}
+          </TouchableOpacity>
         </>
       )}
       <View style={{ height: 30 }} />
@@ -331,6 +412,48 @@ const styles = StyleSheet.create({
     color: '#2E86DE',
     fontSize: 13,
     fontWeight: 'bold',
+  },
+  cardFooter: {
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    paddingTop: 12,
+  },
+  actionButton: {
+    backgroundColor: '#2E86DE',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  actionButtonDisabled: {
+    backgroundColor: '#A0C4F1',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  loadMoreButton: {
+    marginVertical: 10,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#2E86DE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+    backgroundColor: '#fff',
+  },
+  loadMoreButtonDisabled: {
+    borderColor: '#A0C4F1',
+  },
+  loadMoreText: {
+    color: '#2E86DE',
+    fontSize: 14,
+    fontWeight: '700',
   },
   emptyContainer: {
     padding: 40,

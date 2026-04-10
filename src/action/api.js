@@ -607,12 +607,58 @@ const API = {
       return error.response;
     }
   },
+  async vendorLogin(phoneNo) {
+    try {
+      const data = await makePostRequest(BASE_URL + '/vendor_login', {
+        phone_no: phoneNo,
+      });
+      return data;
+    } catch (error) {
+      return error.response;
+    }
+  },
+
+  async vendorVerifyOtp(phoneNo, otp) {
+    try {
+      const data = await makePostRequest(BASE_URL + '/vendor_verify_otp', {
+        phone_no: phoneNo,
+        otp: otp,
+      });
+      return data;
+    } catch (error) {
+      return error.response;
+    }
+  },
+
+  async setMarkAsCheckout(orderId) {
+    try {
+      const data = await makePostRequestWithToken(
+        BASE_URL + '/vendor_mark_booking_checkout',
+        {
+          order_id: orderId,
+        },
+      );
+      return data;
+    } catch (error) {
+      return error.response;
+    }
+  },
+
+  async getVendorWallet() {
+    try {
+      const data = await makeGetRequestWithToken(BASE_URL + '/vendor_wallet_history');
+      return data;
+    } catch (error) {
+      return error.response;
+    }
+  },
+
   async getOrdersByVendorId(vendorId) {
     try {
       const data = await makeGetRequestWithToken(
         BASE_URL + '/get_all_order_by_vendor_id?vendor_id=' + vendorId,
       );
-
+      console.log('get_all_order_by_vendor_id======>', data);
       return data;
     } catch (error) {
       return error.response;
@@ -628,6 +674,18 @@ const API = {
         },
       );
 
+      return data;
+    } catch (error) {
+      return error.response;
+    }
+  },
+
+  async raiseWithdrawRequest(amt) {
+    try {
+      const data = await makePostRequestWithToken(
+        BASE_URL + '/vendor_raise_amt_withdraw_request',
+        { amt },
+      );
       return data;
     } catch (error) {
       return error.response;

@@ -19,6 +19,7 @@ import TermsConditions from '../screens/app/account/terms-conditions/terms-condi
 import ContactUs from '../screens/app/account/contact-us/contact-us';
 
 import HomeScreen from '../screens/app/home-screen/home-screen';
+import WalletScreen from '../screens/app/WalletScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -103,6 +104,13 @@ export default function AppNavigator({ userProfile }) {
           component={ContactUs}
           options={{
             title: 'Contact Us',
+          }}
+        />
+        <Stack.Screen
+          name="Wallet"
+          component={WalletScreen}
+          options={{
+            title: 'My Wallet',
           }}
         />
 
