@@ -16,13 +16,13 @@ export default function ViewProfile(props) {
   const { signOut } = React.useContext(AuthContext).authContext;
 
   const profileOptions = [
-    {
-      id: 1,
-      title: 'Change Password',
-      subTitle: 'Update your account password',
-      icon: 'lock',
-      screen: 'ChangePassword',
-    },
+    // {
+    //   id: 1,
+    //   title: 'Change Password',
+    //   subTitle: 'Update your account password',
+    //   icon: 'lock',
+    //   screen: 'ChangePassword',
+    // },
     {
       id: 2,
       title: 'About',
@@ -34,7 +34,7 @@ export default function ViewProfile(props) {
       id: 3,
       title: 'Wallet',
       subTitle: 'View your wallet balance',
-      icon: 'wallet',
+      icon: 'credit-card',
       screen: 'Wallet',
     },
     {

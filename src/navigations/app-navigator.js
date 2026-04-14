@@ -113,24 +113,6 @@ export default function AppNavigator({ userProfile }) {
             title: 'My Wallet',
           }}
         />
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       </Stack.Navigator>
     </NavigationContainer>
   );

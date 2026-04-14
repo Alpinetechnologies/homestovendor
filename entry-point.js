@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, View, ActivityIndicator } from 'react-native';
 import { AuthContext } from './auth-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuthNavigator from './src/navigations/auth-navigator';
