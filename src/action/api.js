@@ -653,10 +653,10 @@ const API = {
     }
   },
 
-  async getOrdersByVendorId(vendorId) {
+  async getOrdersByVendorId() {
     try {
       const data = await makeGetRequestWithToken(
-        BASE_URL + '/get_all_order_by_vendor_id?vendor_id=' + vendorId,
+        BASE_URL + '/get_all_order_by_vendor_id',
       );
       console.log('get_all_order_by_vendor_id======>', data);
       return data;
@@ -674,6 +674,39 @@ const API = {
         },
       );
 
+      return data;
+    } catch (error) {
+      return error.response;
+    }
+  },
+
+  async shareOtpCompleteOrder(orderId) {
+    try {
+      const data = await makePostRequestWithToken(
+        BASE_URL + '/vendor_send_otp',
+        { order_id: orderId },
+      );
+      return data;
+    } catch (error) {
+      return error.response;
+    }
+  },
+
+  async verifyOtpCompleteOrder(orderId, otp) {
+    try {
+      const data = await makePostRequestWithToken(
+        BASE_URL + '/share_otp_complete_order',
+        { order_id: orderId, otp: otp },
+      );
+      return data;
+    } catch (error) {
+      return error.response;
+    }
+  },
+
+  async getWithdrawRequests() {
+    try {
+      const data = await makeGetRequestWithToken(BASE_URL + '/vendor_withdraw_request');
       return data;
     } catch (error) {
       return error.response;

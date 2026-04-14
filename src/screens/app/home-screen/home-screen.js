@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Linking, Alert, RefreshControl } from 'react-native';
+import React, { useEffect, useState, useContext, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Image, Linking, Alert, RefreshControl, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { AuthContext } from '../../../../auth-context';
 import API from '../../../action/api';
 
@@ -11,6 +11,11 @@ export default function HomeScreen() {
   const [pastOrders, setPastOrders] = useState([]);
   const [checkoutLoading, setCheckoutLoading] = useState(null); // stores order_id being processed
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [otpModal, setOtpModal] = useState({ visible: false, orderId: null });
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '']);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const otpRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [dashboardData, setDashboardData] = useState({
     totalBookings: 0,
@@ -22,16 +27,13 @@ export default function HomeScreen() {
 
   const fetchOrders = async ({ silent = false } = {}) => {
     try {
-      const res = await API.getOrdersByVendorId(userProfile?.user_id);
+      const res = await API.getOrdersByVendorId();
       if (res && res.success === 'true' && typeof res.extraData === 'object') {
-        const ongoing = res.extraData.ongoing_bookings || [];
-        const past = res.extraData.past_cancel_bookings || [];
+        const ongoing = res.extraData.upcoming_bookings || [];
+        const past = res.extraData.booking_history || [];
         setOngoingOrders(ongoing);
         setPastOrders(past);
-        setDashboardData(prev => ({
-          ...prev,
-          totalBookings: ongoing.length + past.length,
-        }));
+
       } else {
         // success: "false" or extraData is "No order Found" string — clear lists
         setOngoingOrders([]);
@@ -60,6 +62,64 @@ export default function HomeScreen() {
   const handleLoadMore = () => {
     setIsLoadingMore(true);
     fetchOrders({ silent: true });
+  };
+
+  const handleCheckoutInit = async (orderId) => {
+    setIsSendingOtp(true);
+    try {
+      const res = await API.shareOtpCompleteOrder(orderId);
+      if (res && (res.success === 'true' || res.success === true)) {
+        setOtpDigits(['', '', '', '']);
+        setOtpModal({ visible: true, orderId });
+        setTimeout(() => otpRefs[0]?.current?.focus(), 300);
+      } else {
+        const msg = typeof res?.msg === 'string' ? res.msg : 'Failed to send OTP. Please try again.';
+        Alert.alert('Error', msg);
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleOtpDigitChange = (text, index) => {
+    const digit = text.replace(/[^0-9]/g, '').slice(-1);
+    const updated = [...otpDigits];
+    updated[index] = digit;
+    setOtpDigits(updated);
+    if (digit && index < 3) {
+      otpRefs[index + 1]?.current?.focus();
+    }
+  };
+
+  const handleOtpKeyPress = (e, index) => {
+    if (e.nativeEvent.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      otpRefs[index - 1]?.current?.focus();
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const otp = otpDigits.join('');
+    if (otp.length < 4) {
+      Alert.alert('Error', 'Please enter the 4-digit OTP.');
+      return;
+    }
+    setIsVerifyingOtp(true);
+    try {
+      const res = await API.verifyOtpCompleteOrder(otpModal.orderId, otp);
+      if (res && (res.success === 'true' || res.success === true)) {
+        setOtpModal({ visible: false, orderId: null });
+        fetchOrders({ silent: true });
+      } else {
+        const msg = typeof res?.msg === 'string' ? res.msg : 'Invalid OTP. Please try again.';
+        Alert.alert('Error', msg);
+      }
+    } catch (e) {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
   };
 
   const handleCheckout = (orderId) => {
@@ -156,20 +216,21 @@ export default function HomeScreen() {
         )}
       </View>
 
-
-      <View style={styles.cardFooter}>
-        <TouchableOpacity
-          style={[styles.actionButton, isCheckingOut && styles.actionButtonDisabled]}
-          onPress={onCheckout}
-          disabled={isCheckingOut}
-        >
-          {isCheckingOut ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.actionButtonText}>Mark as Check-out</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      {item.order_status === 'Pending' && (
+        <View style={styles.cardFooter}>
+          <TouchableOpacity
+            style={[styles.actionButton, isCheckingOut && styles.actionButtonDisabled]}
+            onPress={onCheckout}
+            disabled={isCheckingOut}
+          >
+            {isCheckingOut ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.actionButtonText}>Mark as Check-out</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 
@@ -188,59 +249,60 @@ export default function HomeScreen() {
       <BookingCard
         key={item.order_id || index}
         item={item}
-        onCheckout={() => handleCheckout(item.order_id)}
-        isCheckingOut={checkoutLoading === item.order_id}
+        onCheckout={() => handleCheckoutInit(item.order_id)}
+        isCheckingOut={checkoutLoading === item.order_id || (isSendingOtp && otpModal.orderId === item.order_id)}
       />
     ));
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          colors={['#2E86DE']}
-          tintColor="#2E86DE"
-        />
-      }
-    >
-      <Text style={styles.heading}>Vendor Dashboard</Text>
+    <>
+      <ScrollView
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={['#2E86DE']}
+            tintColor="#2E86DE"
+          />
+        }
+      >
+        <Text style={styles.heading}>Vendor Dashboard</Text>
 
-      {isLoading ? (
-        <ActivityIndicator size="large" color="#2E86DE" style={{ marginTop: 50 }} />
-      ) : (
-        <>
-          {/* Dashboard Summary */}
-          <View style={styles.row}>
-            <SummaryCard title="Total Bookings" value={dashboardData.totalBookings} />
-            <SummaryCard title="Occ. Rate" value={`${occupancyRate}%`} />
-          </View>
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#2E86DE" style={{ marginTop: 50 }} />
+        ) : (
+          <>
+            {/* Dashboard Summary */}
+            <View style={styles.row}>
+              <SummaryCard title="Total Bookings" value={ongoingOrders.length} />
+              <SummaryCard title="History" value={`${pastOrders.length}`} />
+            </View>
 
-          {/* Tabs */}
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'ongoing' && styles.activeTab]}
-              onPress={() => setActiveTab('ongoing')}
-            >
-              <Text style={[styles.tabText, activeTab === 'ongoing' && styles.activeTabText]}>Ongoing</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'past' && styles.activeTab]}
-              onPress={() => setActiveTab('past')}
-            >
-              <Text style={[styles.tabText, activeTab === 'past' && styles.activeTabText]}>Past / Cancelled</Text>
-            </TouchableOpacity>
-          </View>
+            {/* Tabs */}
+            <View style={styles.tabContainer}>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 'ongoing' && styles.activeTab]}
+                onPress={() => setActiveTab('ongoing')}
+              >
+                <Text style={[styles.tabText, activeTab === 'ongoing' && styles.activeTabText]}>Ongoing</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, activeTab === 'past' && styles.activeTab]}
+                onPress={() => setActiveTab('past')}
+              >
+                <Text style={[styles.tabText, activeTab === 'past' && styles.activeTabText]}>History</Text>
+              </TouchableOpacity>
+            </View>
 
-          {/* List Content */}
-          <View style={styles.listContainer}>
-            {renderContent()}
-          </View>
+            {/* List Content */}
+            <View style={styles.listContainer}>
+              {renderContent()}
+            </View>
 
-          {/* Load More */}
-          <TouchableOpacity
+            {/* Load More */}
+            {/* <TouchableOpacity
             style={[styles.loadMoreButton, isLoadingMore && styles.loadMoreButtonDisabled]}
             onPress={handleLoadMore}
             disabled={isLoadingMore}
@@ -250,11 +312,68 @@ export default function HomeScreen() {
             ) : (
               <Text style={styles.loadMoreText}>Load More</Text>
             )}
-          </TouchableOpacity>
-        </>
-      )}
-      <View style={{ height: 30 }} />
-    </ScrollView>
+          </TouchableOpacity> */}
+          </>
+        )}
+        <View style={{ height: 30 }} />
+      </ScrollView>
+
+      <Modal
+        visible={otpModal.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOtpModal({ visible: false, orderId: null })}
+      >
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Verify OTP</Text>
+            <Text style={styles.modalSubtitle}>
+              Enter the 4-digit OTP sent to your registered mobile number.
+            </Text>
+
+            <View style={styles.otpRow}>
+              {otpDigits.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={otpRefs[index]}
+                  style={styles.otpInput}
+                  value={digit}
+                  onChangeText={(text) => handleOtpDigitChange(text, index)}
+                  onKeyPress={(e) => handleOtpKeyPress(e, index)}
+                  keyboardType="number-pad"
+                  maxLength={1}
+                  textAlign="center"
+                  selectTextOnFocus
+                />
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.verifyButton, isVerifyingOtp && styles.actionButtonDisabled]}
+              onPress={handleVerifyOtp}
+              disabled={isVerifyingOtp}
+            >
+              {isVerifyingOtp ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.actionButtonText}>Verify & Check-out</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.cancelModalButton}
+              onPress={() => setOtpModal({ visible: false, orderId: null })}
+              disabled={isVerifyingOtp}
+            >
+              <Text style={styles.cancelModalText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </>
   );
 }
 
@@ -463,5 +582,69 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#999',
     fontStyle: 'italic',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#222',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 18,
+  },
+  otpRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 28,
+    gap: 12,
+  },
+  otpInput: {
+    width: 52,
+    height: 56,
+    borderWidth: 1.5,
+    borderColor: '#2E86DE',
+    borderRadius: 10,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#222',
+    backgroundColor: '#F0F7FF',
+  },
+  verifyButton: {
+    backgroundColor: '#2E86DE',
+    paddingVertical: 13,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    minHeight: 48,
+    marginBottom: 12,
+  },
+  cancelModalButton: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    width: '100%',
+  },
+  cancelModalText: {
+    color: '#999',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
