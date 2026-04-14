@@ -125,7 +125,7 @@ export default function SignIn(props) {
     setIsLoading(true);
     try {
       const res = await API.vendorVerifyOtp(phone.trim(), otp);
-      if (res && res.success === 'true') {
+      if (res && res.success === 'true' && res.user_status === '1') {
         await AsyncStorage.setItem('userId', res.user_id);
         await AsyncStorage.setItem('accessToken', res.token);
 
@@ -142,8 +142,10 @@ export default function SignIn(props) {
         }
 
         signIn({ token: res.token, id: res.user_id });
+
       } else {
-        ToastAlertMsg(res?.msg || 'Invalid OTP. Please try again.');
+
+        ToastAlertMsg(res?.msg || 'Hotel not registred.');
       }
     } catch (e) {
       ToastAlertMsg('Something went wrong. Please try again.');
@@ -238,12 +240,12 @@ export default function SignIn(props) {
           />
         </View>
 
-        <View style={baseStyle.signUpContainer}>
+        {/* <View style={baseStyle.signUpContainer}>
           <Text style={baseStyle.signUp}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => props.navigation.navigate('SignUp')}>
             <Text style={baseStyle.signUpHeading}>Sign Up</Text>
           </TouchableOpacity>
-        </View>
+        </View> */}
       </View>
     </>
   );

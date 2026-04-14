@@ -166,7 +166,7 @@ const WalletScreen = () => {
     switch (status) {
       case '1': return { label: 'Approved', bg: '#E8F8F0', color: '#27AE60' };
       case '2': return { label: 'Rejected', bg: '#FEECEC', color: '#E74C3C' };
-      default:  return { label: 'Pending',  bg: '#FFF3E0', color: '#F39C12' };
+      default: return { label: 'Pending', bg: '#FFF3E0', color: '#F39C12' };
     }
   };
 
@@ -305,7 +305,7 @@ const WalletScreen = () => {
           <ActivityIndicator size="large" color="#2E86DE" style={{ marginTop: 40 }} />
         ) : (
           <FlatList
-            data={transactions}
+            data={transactions.reverse()}
             keyExtractor={(item, index) => item.id?.toString() ?? index.toString()}
             renderItem={renderTransaction}
             ListEmptyComponent={renderEmpty}
@@ -321,7 +321,7 @@ const WalletScreen = () => {
           <ActivityIndicator size="large" color="#2E86DE" style={{ marginTop: 40 }} />
         ) : (
           <FlatList
-            data={withdrawRequests}
+            data={withdrawRequests.reverse()}
             keyExtractor={(item, index) => item.id?.toString() ?? index.toString()}
             renderItem={renderWithdrawRequest}
             ListEmptyComponent={renderEmpty}

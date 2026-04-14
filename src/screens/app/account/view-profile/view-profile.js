@@ -44,13 +44,13 @@ export default function ViewProfile(props) {
       icon: 'file-text',
       screen: 'TermsConditions',
     },
-    {
-      id: 5,
-      title: 'Share APK',
-      subTitle: 'Share this app with friends',
-      icon: 'share-2',
-      action: 'share',
-    },
+    // {
+    //   id: 5,
+    //   title: 'Share APK',
+    //   subTitle: 'Share this app with friends',
+    //   icon: 'share-2',
+    //   action: 'share',
+    // },
     {
       id: 6,
       title: 'Contact Us',

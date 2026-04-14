@@ -20,8 +20,8 @@ export default function ContactUs() {
             <ScrollView contentContainerStyle={{ padding: 20 }}>
                 <Text style={styles.title}>Contact Us</Text>
                 <ContactItem icon="mail" title="Email" value="support@homesto.in" />
-                <ContactItem icon="phone" title="Phone" value="+91 1234567890" />
-                <ContactItem icon="map-pin" title="Address" value="Sector 62, Noida, UP, India" />
+                <ContactItem icon="phone" title="Phone" value="+91 9627666768" />
+                {/* <ContactItem icon="map-pin" title="Address" value="Sector 62, Noida, UP, India" /> */}
             </ScrollView>
         </View>
     );

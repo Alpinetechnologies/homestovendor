@@ -78,13 +78,13 @@ export default function EditProfile(props) {
           keyboardType="number-pad"
           defaultValue={phoneNo}
         />
-        <IconInput
+        {/* <IconInput
           placeholder="Enter Username"
           icon="user"
           defaultValue={username}
           onChangeText={text => setUsername(text)}
           keyboardType="email-address"
-        />
+        /> */}
         <IconInput
           placeholder="Enter Email Address"
           icon={'mail'}
